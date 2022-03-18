@@ -3,18 +3,18 @@
 #time : 2022-03-07
 ############################
 
-temp.mark <- c(10, -1, -3, -4, -5, -1, 7, -5, -3, -5, -3, -5, 9, 0, -5, -4, -3, 0, 8, -5, -5, -5,-5, -5, -5)
-temp.name <- c('A', 'G', 'C', 'T', '-')
-changeMark <- matrix(data=temp.mark, nrow = 5, ncol = 5,dimnames = list(temp.name, temp.name))
-gap <- -5
-
 '<-'(
   nw,
   function(s1, s2)
   {
+    temp.mark <- c(10, -1, -3, -4, -5, -1, 7, -5, -3, -5, -3, -5, 9, 0, -5, -4, -3, 0, 8, -5, -5, -5,-5, -5, -5)
+    temp.name <- c('A', 'G', 'C', 'T', '-')
+    changeMark <- matrix(data=temp.mark, nrow = 5, ncol = 5,dimnames = list(temp.name, temp.name))
+    gap <- -5
+    
     len1 <- length(s1) + 1
     len2 <- length(s2) + 1
-    long <- max(len1, len2)
+    long <- len1 + len2 - 1
     rn <- c('-', s1)
     cn <- c('-', s2)
     mark <- matrix(data=0, nrow=len1, ncol=len2, dimnames = list(rn ,cn)) #计分矩阵
@@ -91,17 +91,17 @@ gap <- -5
     )
     
     lapply(0:((len1*len2)-1), writeMark)
-    print(mark)
+    #print(mark)
     
     ans <- matrix(data='-', nrow = 2, ncol = long)
-    nowj <- which.max(mark[len1,])
-    
+    #nowj <- which.max(mark[len1,])
+    #print(road)
     '<-'(
       findBest,
       function(i, j)
       {
         temp.way <- road[i, j]
-        print(temp.way)
+        #print(temp.way)
         if(temp.way==0)
         {
           return(TRUE)
@@ -135,7 +135,7 @@ gap <- -5
     temp.right <- findBest(nowi, nowj)
     
     #print(temp.right)
-    return(ans[,2:max(len1,len2)])
+    return(ans[,-(1:long)])
   }
 )
 
