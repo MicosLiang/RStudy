@@ -1,9 +1,9 @@
 
-#source('./RStudy/Needleman-Wunsch.R')
+source('./RStudy/Needleman-Wunsch.R')
 
 '<-'(
-  NJ,
-  function(ss, times=50)
+  buildRanges,
+  function(ss)
   {
     '<-'(
       JCK,
@@ -29,6 +29,57 @@
       }
     )
     '<-'(
+      easyRange,
+      function(seq1, seq2)
+      {
+        temp <- nw(seq1, seq2)
+        '<-'(
+          biJiao,
+          function(x)
+          {
+            return(x[1]!=x[2])
+          }
+        )
+        d <- sum(as.numeric(unlist(apply(temp, 2, biJiao)))) / dim(temp)[2]
+        return(d)
+      }
+    )
+    rangeMatrix <- matrix(0, length(ss), length(ss))
+    '<-'(
+      calRanges,
+      function(i)
+      {
+        '<-'(
+          calRange,
+          function(k)
+          {
+            if(i == k)
+            {
+              return(0)
+            }
+            else
+            {
+              #return(JCK(ss[[i]], ss[[k]]))
+              return(easyRange(ss[[i]], ss[[k]]))
+            }
+          }
+        )
+        return(unlist(lapply(1:length(ss),calRange)))
+      }
+    )
+    rangeMatrix <- as.matrix(lapply(1:length(ss),calRanges))
+    rangeMatrix <- apply(rangeMatrix, 1, unlist)
+    rownames(rangeMatrix) <- names(ss)
+    colnames(rangeMatrix) <- names(ss)
+    return(rangeMatrix)
+  }
+)
+
+'<-'(
+  NJ,
+  function(ss, rangeMatrix, times=50)
+  {
+    '<-'(
       meshRange,
       function(s1, s2)
       {
@@ -44,7 +95,8 @@
         }
         else
         {
-          return(JCK(s1[[1]], s2[[1]]))
+          tr <- rangeMatrix[which(ssbak==unlist(s1[1])), which(ssbak==unlist(s2[1]))]
+          return(tr)
         }
       }
     )
@@ -117,6 +169,10 @@
         n <- mn[2]
         n <- unlist(n)
         sqslen <- length(sqs)
+        if(sqslen <= 2)
+        {
+          return(Inf)
+        }
         '<-'(
           cal1,
           function(i)
@@ -166,32 +222,158 @@
         s0 <- sum(unlist(s0)) / (len - 1)
         
         sOthers <- unlist(lapply(allPairs, sumBranch, sqs=lst))
-        sAll <- c(s0, sOthers)
+        sAll <- c(sOthers, s0)
         better <- which.min(sAll)
-        if(better==1)
+        if(better==length(sAll))
         {
-          print('build compelete')
-          print(sAll)
-          return(lst)
+          return(list(lst))
         }
         else
         {
-          bp <- allPairs[[(better-1)]]
-          lst <- meshBranch(lst, bp)
+          lock <<- TRUE
+          betters <- which(sAll[-length(sAll)] == sAll[better])
+          '<-'(
+            temp.mesh,
+            function(tb)
+            {
+              bp <- allPairs[[tb]]
+              return(meshBranch(lst, bp))
+            }
+          )
+          lsts <- lapply(betters, temp.mesh)
         }
-        return(lst)
+        return(lsts)
       }
     )
-    seqs <- lapply(ss, delSeq)
-    seqs <- lapply(seqs, list)
+    #seqs <- lapply(ss, delSeq)
+    ssname <- names(ss)
+    ssbak <- lapply(ss, paste, collapse='')
+    
+    seqs <- lapply(ssbak, list)
+    alst <- list(seqs)
     '<-'(
       main.do,
-      function(u)
+      function()
       {
-        seqs <<- nextTree(seqs)
+        talst <- list()
+        '<-'(
+          main.add,
+          function(al)
+          {
+            talst <<- c(talst, nextTree(al))
+          }
+        )
+        temp.no <- lapply(alst, main.add)
+        return(talst)
       }
     )
-    temp.no <- lapply(1:times, main.do)
-    return(seqs)
+    lock <- TRUE
+    cnt <- 0
+    while(lock && cnt < times)
+    {
+      lock <- FALSE
+      cnt <- cnt + 1
+      alst <- main.do()
+    }
+    '<-'(
+      calS0,
+      function(lst)
+      {
+        len <- length(lst)
+        allPairs <- getPairs(len)
+        '<-'(
+          cal,
+          function(p)
+          {
+            return(meshRange(lst[[p[1]]], lst[[p[2]]]))
+          }
+        )
+        s0 <- lapply(allPairs, cal)
+        s0 <- sum(unlist(s0)) / (len - 1)
+        return(s0)
+      }
+    )
+    s0s <- unlist(lapply(alst, calS0))
+    mins <- which(s0s == s0s[which.min(s0s)])
+    '<-'(
+      findSmall,
+      function(t)
+      {
+        return(length(alst[[t]]))
+      }
+    )
+    lens <- unlist(lapply(mins, findSmall))
+    ansTree <- alst[[mins[which.min(lens)]]]
+    return(ansTree)
+  }
+)
+
+'<-'(
+  drawTree,
+  function(tre, ss, dis, fname)
+  {
+    if(!(require(ggraph) && require(igraph)))
+    {
+      stop('Liang@You must install ggraph and their requirments!')
+    }
+    ss <- lapply(ss, paste, collapse='')
+    #std <- list(ss[which.min(apply(dis, 1, sum))])
+    stt <- tre
+    '<-'(
+      meshRange,
+      function(s1, s2)
+      {
+        tl <- list(s1, s2)
+        tlb <- as.numeric(c(length(s1)>1, length(s2)>1))
+        if(sum(tlb) > 0)
+        {
+          tlw <- which.max(tlb)
+          dmi <- meshRange(tl[[tlw]][[1]], tl[[-tlw]])
+          dni <- meshRange(tl[[tlw]][[2]], tl[[-tlw]])
+          dmn <- meshRange(tl[[tlw]][[1]], tl[[tlw]][[2]])
+          return((dmi + dni - dmn) / 2)
+        }
+        else
+        {
+          tr <- dis[which(ss==unlist(s1[1])), which(ss==unlist(s2[1]))]
+          return(tr)
+        }
+      }
+    )
+    nd <- data.frame(name=0, key='')
+    '<-'(
+      genTree,
+      function(tre, ss, node=0, nl=0)
+      {
+        len <- length(tre)
+        d <- data.frame()
+        '<-'(
+          temp.do,
+          function(n)
+          {
+            d <<- rbind(d, data.frame(from=node, to=node+n+nl))
+            if(length(tre[[n]])>1)
+            {
+              d <<- rbind(d, genTree(tre[[n]], ss, node+n+nl, len+n*10))
+              nd <<- rbind(nd, data.frame(name=node+n+nl, key=abs(meshRange(stt,tre[[n]]))))
+            }
+            else
+            {
+              nd <<- rbind(nd, data.frame(name=node+n+nl, key=paste(names(ss)[which(ss == tre[[n]][[1]])], '(', abs(meshRange(stt,tre[[n]])), ')')))
+            }
+          }
+        )
+        temp.no <- lapply(1:len,temp.do)
+        return(d)
+      }
+    )
+    gt <- genTree(tre,ss)
+    print(nd)
+    ggraph(graph_from_data_frame(gt, vertices = nd), layout = 'dendrogram', circular = TRUE) + 
+      geom_edge_link() +
+      geom_node_point() +
+      geom_node_text(aes(label = key,), repel = TRUE) +
+      labs(title = fname)+
+      theme_void()
   }
 )

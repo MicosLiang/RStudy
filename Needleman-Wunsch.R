@@ -7,9 +7,23 @@
   nw,
   function(s1, s2)
   {
-    temp.mark <- c(10, -1, -3, -4, -5, -1, 7, -5, -3, -5, -3, -5, 9, 0, -5, -4, -3, 0, 8, -5, -5, -5,-5, -5, -5)
-    temp.name <- c('A', 'G', 'C', 'T', '-')
-    changeMark <- matrix(data=temp.mark, nrow = 5, ncol = 5,dimnames = list(temp.name, temp.name))
+    #temp.mark <- c(10, -1, -3, -4, -5, -1, 7, -5, -3, -5, -3, -5, 9, 0, -5, -4, -3, 0, 8, -5, -5, -5,-5, -5, -5)
+    #temp.name <- c('A', 'G', 'C', 'T', '-')
+    #temp.mark <- matrix(data=temp.mark, nrow = 5, ncol = 5,dimnames = list(temp.name, temp.name))
+    '<-'(
+      changeMark,
+      function(ni, nj)
+      {
+        if(ni == nj)
+        {
+          return(5)
+        }
+        else
+        {
+          return(-4)
+        }
+      }
+    )
     gap <- -5
     
     len1 <- length(s1) + 1
@@ -44,7 +58,7 @@
           return(gap * (nowi-1))
         }
         
-        lp <- mark[nowi-1, nowj-1] +  changeMark[namei, namej]
+        lp <- mark[nowi-1, nowj-1] +  changeMark(namei, namej)
         up <- mark[nowi-1, nowj] + gap
         left <- mark[nowi, nowj-1] + gap
         
@@ -90,7 +104,7 @@
       }
     )
     
-    lapply(0:((len1*len2)-1), writeMark)
+    temp.no <- lapply(0:((len1*len2)-1), writeMark)
     #print(mark)
     
     ans <- matrix(data='-', nrow = 2, ncol = long)
@@ -149,36 +163,36 @@
 )
 
 '<-'(
-  readFasta,
+  read.fasta,
   function(f)
   {
     ans <- list()
-    cnt <- 0
     temp.in <- readLines(f)
+    long <- length(temp.in)
     temp.ans <- c()
+    temp.names <- c()
     '<-'(
       delLine,
       function(w)
       {
         temp.c <- delSeq(temp.in[w])
-        #print(length(temp.c))
-        if(is.na(match('>', temp.c)))
+        if(length(temp.c)==0 || w==long)
         {
-          temp.ans <<- c(temp.ans, temp.c)
+          ans <<- c(ans, list(temp.ans))
+          temp.ans <<- c()
+        }
+        else if(length(which(temp.c=='>')))
+        {
+          temp.names <<- c(temp.names, paste(temp.c[-1], collapse = ''))
         }
         else
         {
-          if(cnt!=1)
-          {
-            ans[cnt] <<- temp.ans
-            #temp.ans <<- c()
-          }
-          cnt <<- cnt + 1
+          temp.ans <<- c(temp.ans, temp.c)
         }
       }
     )
-    lapply(1:length(temp.in), delLine)
-    print(ans[1])
-    return(temp.ans)
+    lapply(1:long, delLine)
+    names(ans) <- temp.names
+    return(ans)
   }
 )
