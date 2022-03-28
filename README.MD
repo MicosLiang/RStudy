@@ -65,3 +65,7 @@ I only have poor Chinglish, sorry for this :(
 ###### ploy_fitting
 
   图像边缘的多边形拟合（未完成）
+
+
+###### China_chess
+  纯R语言实现蒙特卡洛树搜索的象棋程序，执行效率不高

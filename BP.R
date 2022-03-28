@@ -175,7 +175,7 @@ eta <- 1
       }
     )
     temp.no <- lapply(1:num, doFit)
-    plot(1:num, recorder, type = 'o', main='loss-times', xlab='time',ylab='loss')
+    #plot(1:num, recorder, type = 'o', main='loss-times', xlab='time',ylab='loss')
     return(paras)
   }
 )
