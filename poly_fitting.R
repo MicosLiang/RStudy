@@ -1,4 +1,5 @@
 library(parallel)
+source('./RStudy/TSP.R')
 
 '<-'(
   read.bmp24,
@@ -65,7 +66,7 @@ library(parallel)
     yuzhi <- ifelse(yuzhi==-1,max(img)/2,yuzhi)
     print(yuzhi)
     pts <- which(img > yuzhi)
-    pts <- rbind((pts %% height) + 1, floor(pts/width))
+    pts <- cbind((pts %% height) + 1, floor(pts/width))
     return(pts)
   }
 )
@@ -83,18 +84,35 @@ library(parallel)
 
 #The following is not completed
 
-
 '<-'(
-  outsideFind,
-  function(img)
+  getEdge,
+  function(pts)
   {
-    dims <- dim(img)
-    rows <- dims[1]
-    cols <- dims[2]
-    nowP <- c(1,1)
-    moves <- matrix(c(1,0,1,1,0,1,-1,-1,-1,0,-1,1,-1,0,1,-1),2,8)
-    nowDc <- 0
-    
+    len <- dim(pts)[1]
+    tmp <- matrix(0,max(pts[,1]),max(pts[,2]))
+    tmp[((pts[,2]-1)*max(pts[,1]) + pts[,1])] <- 1
+    t1 <- sapply(1:max(pts[,1]), function(i){return(which.min(which(tmp[i,]==1)))})
+    t2 <- sapply(1:max(pts[,1]), function(i){return(which.max(which(tmp[i,]==1)))})
+    t3 <- sapply(1:max(pts[,2]), function(i){return(which.min(which(tmp[,i]==1)))})
+    t4 <- sapply(1:max(pts[,2]), function(i){return(which.max(which(tmp[,i]==1)))})
+    tz <- c(t1,t2)
+    ans1 <- matrix(c(1:length(tz),tz), length(tz), 2)
+    tz <- c(t3,t4)
+    ans2 <- matrix(c(tz,1:length(tz)), length(tz), 2)
+    ans <- rbind(ans1, ans2)
+    return(ans)
+    #len <- dim(pts)[1]
+    #if(len > 100)
+    #{
+    #  dm <- as.matrix(dist(pts))
+    #  vote <- rowSums(dm)
+    #  vote <- abs((vote / sum(vote)) - 0.1)
+    #  pts <- pts[sample(1:len, 200, prob = vote),]
+    #}
+    #road <- SaTsp(dist(pts))
+    road <- AcoTsp(dist(ans))
+    edge <- ans[road,]
+    return(edge)
   }
 )
 

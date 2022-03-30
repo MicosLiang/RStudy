@@ -6,9 +6,10 @@
 
 建议clone到RStudio的工作空间下，因为这是我的工作环境。
 
-R version == 4.1.2
+R version == 4.1.3
 
 联系邮箱：liangjh21@lzu.edu.cn
+个人网站：www.micosliang.space
 
 （如果您觉得这个仓库对您有帮助，能不能帮我点个免费的小星星呢/dog）
 
@@ -69,3 +70,9 @@ I only have poor Chinglish, sorry for this :(
 
 ###### China_chess
   纯R语言实现蒙特卡洛树搜索的象棋程序，执行效率不高
+
+###### five_chess_game
+  用了Rcpp的蒙特卡洛树的五子棋，做的比较失败
+
+###### TSP
+  TSP问题，写了两种方法，蚁群算法和模拟退火，效果比较好
