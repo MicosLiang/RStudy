@@ -118,7 +118,7 @@ library(parallel)
     {
       parallel::stopCluster(clist)
     }
-    print(minDis)
+    cat('mindis:',minDis)
     return(minRoad)
   }
 )
@@ -193,7 +193,7 @@ library(parallel)
     }
     
     plot(2:cout, displot[2:cout],'l',xlab='iter_times',ylab='iter_distance',main='SA-TSP')
-    print(dis)
+    cat('mindis:',dis)
     return(road)
   }
 )
@@ -217,7 +217,7 @@ library(parallel)
     py <- runif(pn,100,1000)
     pts <- matrix(c(px,py),pn,2)
     road <- AcoTsp(dist(pts))
-    plot(c(pts[road,1], pts[road[1],1]),c(pts[road,2],pts[road[1],2]),'o',xlab:'x',ylab:'y')
+    plot(c(pts[road,1], pts[road[1],1]),c(pts[road,2],pts[road[1],2]),'o',xlab='x',ylab='y')
   }
 )
 
@@ -242,15 +242,16 @@ library(parallel)
     pts <- matrix(c(px,py),pn,2)
     ra <- AcoTsp(dist(pts))
     rs <- SaTsp(dist(pts))
-    split.screen(c(2,2))
-    screen(1)
+    
+    opar<-par(no.readonly=TRUE)
+    par(mfrow=c(2,2))
+    par(pin=c(1,1))
     plot(pts[,1],pts[,2],xlab='x',ylab='y',main='Original')
-    screen(2)
     plot(pts[,1],pts[,2],'o',xlab='x',ylab='y',main='Random')
-    screen(3)
     plot(c(pts[ra,1], pts[ra[1],1]),c(pts[ra,2],pts[ra[1],2]),'o',xlab='x',ylab='y',main='ACO')
-    screen(4)
     plot(c(pts[rs,1], pts[rs[1],1]),c(pts[rs,2],pts[rs[1],2]),'o',xlab='x',ylab='y',main='SA')
-    close.screen(all=TRUE)
+    par(opar)
   }
 )
+
+system.time(compare())
