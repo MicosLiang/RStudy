@@ -129,6 +129,7 @@ library(parallel)
   {
     if(class(dm) == 'dist')
     {
+      #浅浅验证下输入
       dm <- as.matrix(dm)
     }
     
@@ -136,13 +137,16 @@ library(parallel)
       interfere,
       function(r)
       {
+        #对解进行随机的扰动，随机采用不同的两种方式
         if(runif(1) > 0.5)
         {
+          #交换两座城市的顺序
           k <- sample(1:nums, 2)
           r[k] <- r[rev(k)]
         }
         else
         {
+          #交换一段城市的顺序
           k <- sort(sample(2:nums, 3))
           nr <- r
           r <- c(r[1:(k[1]-1)],r[k[2]:(k[3]-1)],r[k[1]:(k[2]-1)],r[(k[3]):nums])
@@ -155,6 +159,7 @@ library(parallel)
       calDistance,
       function(r)
       {
+        #计算路程距离，作为评估解好坏的指标
         tr <- integer(nums)
         tr <- r[2:nums]
         tr[nums] <- r[1]
@@ -162,8 +167,7 @@ library(parallel)
       }
     )
     
-    nums <- dim(dm)[1]
-    TS <- TS
+    nums <- dim(dm)[1] #城市数量
     Tp <- TS #温度
     road <- sample(1:nums, nums) #随机产生路径作为初始解
     dis <- calDistance(road)
@@ -173,22 +177,28 @@ library(parallel)
     while(Tp > TE)
     {
       cout <- cout + 1
-      cnt <- ceiling(nums*TS/Tp)
-      #cnt <- 100
+      #你想用这种方式也行
+      #cnt <- ceiling(nums*TS/Tp)
+      cnt <- 10
       while(cnt > 0)
       {
+        #扰动
         nroad <- interfere(road)
         ndis <- calDistance(nroad)
+        #评价新解的好坏
         deta <- (ndis - dis)/dis
+        #模拟退火的核心公式
         if(deta < 0 || exp(-Tp/deta) > runif(1))
         {
           dis <- ndis
           road <- nroad
-          cnt <- ceiling(nums*Tp/TS)
+          #cnt <- ceiling(nums*Tp/TS)
+          cnt <- 10
         }
+        #十次没有获得新解就降温
         cnt <- cnt - 1
       }
-      Tp <- Tp * alpha
+      Tp <- Tp * alpha #降温
       displot[cout] <- dis
     }
     
@@ -204,8 +214,6 @@ library(parallel)
   function()
   {
     
-  
-    
   }
 )
 
@@ -217,7 +225,7 @@ library(parallel)
     py <- runif(pn,100,1000)
     pts <- matrix(c(px,py),pn,2)
     road <- AcoTsp(dist(pts))
-    plot(c(pts[road,1], pts[road[1],1]),c(pts[road,2],pts[road[1],2]),'o',xlab:'x',ylab:'y')
+    plot(c(pts[road,1], pts[road[1],1]),c(pts[road,2],pts[road[1],2]),'o',xlab='x',ylab='y')
   }
 )
 

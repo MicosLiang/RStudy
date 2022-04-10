@@ -32,7 +32,8 @@ source('./RStudy/Needleman-Wunsch.R')
       easyRange,
       function(seq1, seq2)
       {
-        temp <- nw(seq1, seq2)
+        #temp <- nw(seq1, seq2)
+        temp <- liang.dsaSA(seq1, seq2)
         '<-'(
           biJiao,
           function(x)
@@ -40,7 +41,7 @@ source('./RStudy/Needleman-Wunsch.R')
             return(x[1]!=x[2])
           }
         )
-        d <- sum(as.numeric(unlist(apply(temp, 2, biJiao)))) / dim(temp)[2]
+        d <- sum(as.numeric(unlist(apply(temp, 1, biJiao)))) / dim(temp)[2]
         return(d)
       }
     )
@@ -53,7 +54,7 @@ source('./RStudy/Needleman-Wunsch.R')
           calRange,
           function(k)
           {
-            if(i == k)
+            if(i >= k)
             {
               return(0)
             }
@@ -355,11 +356,13 @@ source('./RStudy/Needleman-Wunsch.R')
             if(length(tre[[n]])>1)
             {
               d <<- rbind(d, genTree(tre[[n]], ss, node+n+nl, len+n*10))
-              nd <<- rbind(nd, data.frame(name=node+n+nl, key=abs(meshRange(stt,tre[[n]]))))
+              #nd <<- rbind(nd, data.frame(name=node+n+nl, key=abs(meshRange(stt,tre[[n]]))))
+              nd <<- rbind(nd, data.frame(name=node+n+nl, key=''))
             }
             else
             {
-              nd <<- rbind(nd, data.frame(name=node+n+nl, key=paste(names(ss)[which(ss == tre[[n]][[1]])], '(', abs(meshRange(stt,tre[[n]])), ')')))
+              #nd <<- rbind(nd, data.frame(name=node+n+nl, key=paste(names(ss)[which(ss == tre[[n]][[1]])], '(', abs(meshRange(stt,tre[[n]])), ')')))
+              nd <<- rbind(nd, data.frame(name=node+n+nl, key=names(ss)[which(ss == tre[[n]][[1]])]))
             }
           }
         )
@@ -368,8 +371,8 @@ source('./RStudy/Needleman-Wunsch.R')
       }
     )
     gt <- genTree(tre,ss)
-    print(nd)
-    ggraph(graph_from_data_frame(gt, vertices = nd), layout = 'dendrogram', circular = TRUE) + 
+    #print(nd)
+    ggraph(graph_from_data_frame(gt, vertices = nd), layout = 'dendrogram', circular = FALSE) + 
       geom_edge_link() +
       geom_node_point() +
       geom_node_text(aes(label = key,), repel = TRUE) +
@@ -377,3 +380,5 @@ source('./RStudy/Needleman-Wunsch.R')
       theme_void()
   }
 )
+
+#dat[which(grepl('com', names(dat)))]
