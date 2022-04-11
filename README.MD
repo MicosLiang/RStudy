@@ -8,8 +8,8 @@
 
 R version == 4.1.3
 
-联系邮箱：liangjh21@lzu.edu.cn
-个人网站：www.micosliang.space
+联系邮箱：liangjh21@lzu.edu.cn AND liang@iloveyou.uno
+个人网站：www.iloveyou.uno
 
 （如果您觉得这个仓库对您有帮助，能不能帮我点个免费的小星星呢/dog）
 
@@ -21,9 +21,10 @@ I want your suggestions on my code,  you can also put an issue or e-mail me if y
 
 I suggest you clone it into your RStudio workspace, because I do so.
 
-R version == 4.1.2
+R version == 4.1.3
 
-e-mail address :  liangjh21@lzu.edu.cn
+e-mail address :  liangjh21@lzu.edu.cn AND liang@iloveyou.uno
+blog : www.iloveyou.uno
 
 (If this repository helped you, I will be very happy if you give me a star : - D) 
 
@@ -69,10 +70,17 @@ I only have poor Chinglish, sorry for this :(
 
 
 ###### China_chess
+
   纯R语言实现蒙特卡洛树搜索的象棋程序，执行效率不高
 
 ###### five_chess_game
+
   用了Rcpp的蒙特卡洛树的五子棋，做的比较失败
 
 ###### TSP
+
   TSP问题，写了两种方法，蚁群算法和模拟退火，效果比较好
+  
+###### sequence_alignment
+
+  双序列比对和多序列比对
