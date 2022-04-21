@@ -5,8 +5,8 @@
 #
 require('Rcpp')
 sourceCpp('./RStudy/sequence_alignment.cpp')
-liang_NW(as.matrix(c('c','g')), as.matrix(c('a','t','t','c','g')), print)
-temp.no <- liang_NW(dna1, dna2, print)
+#liang_NW(as.matrix(c('c','g')), as.matrix(c('a','t','t','c','g')), print)
+#temp.no <- liang_NW(dna1, dna2, print)
 require('parallel')
 '<-'(
   liang.dsaNW,
@@ -1414,7 +1414,7 @@ require('parallel')
 
 '<-'(
   liang.msaStarGA,
-  function(seqs, gnum = 100)
+  function(seqs, gnum = 10)
   {
     start <- liang.msaStar(seqs)
     di <- dim(start)
@@ -1490,8 +1490,7 @@ require('parallel')
       groupEvo,
       function(group, start)
       {
-        marks <- matrix(0,gnum,2)
-        marks[,1] <- sapply(group, calMark, start)
+        marks <- sapply(group, calMark, start)
         '<-'(
           fanyan,
           function(id)
@@ -1501,41 +1500,42 @@ require('parallel')
           }
         )
         bear <- 100
-        nowMax <- which.max(marks[,1])
-        maxMark <- marks[nowMax,1]
+        nowMax <- which.max(marks)
+        maxMark <- marks[nowMax]
         best <- group[[nowMax]]
         while(bear > 0)
         {
           ngroup <- lapply(1:gnum,fanyan)
-          marks[,2] <- sapply(ngroup, calMark, start)
+          marks[(gnum+1):(gnum*2)] <- sapply(ngroup, calMark, start)
+          print(max(marks[(gnum+1):(gnum*2)]))
           group[(gnum+1):(gnum*2)] <- ngroup
           keep <- order(marks, decreasing = TRUE)[1:gnum]
           group <- group[keep]
-          marks[,1] <- marks[keep]
-          nowMax <- which.max(marks[,1])
-          if(marks[nowMax,1] <= maxMark)
+          marks <- marks[keep]
+          nowMax <- which.max(marks)
+          if(marks[nowMax] <= maxMark)
           {
             bear <- bear  - 1
           }
           else
           {
-            print(maxMark)
-            maxMark <- marks[nowMax,1]
+            print('dd')
+            maxMark <- marks[nowMax]
             best <- group[[nowMax]]
             bear <- 100
           }
+          print(maxMark)
         }
         return(best)
       }
     )
     
-    last <- 1
+    last <- 1000
     record <- numeric(1000)
     record[1] <- SP(start)
     tim <- 1
     while(last > 0)
     {
-      print(record[tim])
       print(tim)
       tim <- tim + 1
       group <- lapply(1:gnum, genInd, start)
