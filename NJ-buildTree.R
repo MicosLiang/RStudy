@@ -33,7 +33,8 @@ source('./RStudy/Needleman-Wunsch.R')
       function(seq1, seq2)
       {
         #temp <- nw(seq1, seq2)
-        temp <- liang.dsaSA(seq1, seq2)
+        #temp <- liang.dsaSA(seq1, seq2)
+        temp <- liang_NW(as.matrix(seq1), as.matrix(seq2), print)
         '<-'(
           biJiao,
           function(x)
@@ -70,6 +71,7 @@ source('./RStudy/Needleman-Wunsch.R')
     )
     rangeMatrix <- as.matrix(lapply(1:length(ss),calRanges))
     rangeMatrix <- apply(rangeMatrix, 1, unlist)
+    rangeMatrix <- as.matrix(as.dist(rangeMatrix))
     rownames(rangeMatrix) <- names(ss)
     colnames(rangeMatrix) <- names(ss)
     return(rangeMatrix)

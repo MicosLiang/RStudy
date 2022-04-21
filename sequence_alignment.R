@@ -3,6 +3,10 @@
 #
 #
 #
+require('Rcpp')
+sourceCpp('./RStudy/sequence_alignment.cpp')
+liang_NW(as.matrix(c('c','g')), as.matrix(c('a','t','t','c','g')), print)
+temp.no <- liang_NW(dna1, dna2, print)
 require('parallel')
 '<-'(
   liang.dsaNW,
@@ -15,7 +19,7 @@ require('parallel')
         #默认采用匹配计分
         bb1 <- b1=='-'
         bb2 <- b2=='-'
-        return(ifelse(bb1||bb2, ifelse(bb1&&bb2, 0, -2), ifelse(b1==b2, 1, -1)))
+        return(ifelse(bb1||bb2, ifelse(bb1&&bb2, 0, -5), ifelse(b1==b2, 5, -4)))
       }
     )
     markFunc <- ifelse(is.null(markFunc), getMark, markFunc)
@@ -527,9 +531,8 @@ require('parallel')
 
 '<-'(
   liang.msaGA,
-  function(seqs, gnum = 30, pv = 0.01)
+  function(seqs, gnum = 1000, pv = 0.01)
   {
-    clist <- makeCluster(detectCores(logical = FALSE))
     snum <- length(seqs)
     maxLen <- ceiling(max(sapply(seqs, function(s){return(length(s))})) * 1.2)
     '<-'(
@@ -582,7 +585,7 @@ require('parallel')
           m2 <- length(which(b1 & !b2)) #字符对字符，而且一致
           #m3 <- length(which(b1 & b2)) #空格对空格
           m4 <- length(which(!b1 & !b2)) #字符对字符，但不 一致
-          mark <- mark + m1 * -2 + m2 * 1 + m4 * -1
+          mark <- mark + m1 * -2 + m2 * 2 + m4 * 1
         }
         mark <- ifelse(mark==0,1,ifelse(mark<0,-1/mark,mark))
         return(mark)
@@ -630,6 +633,7 @@ require('parallel')
     iter <- 200
     while(iter > 0)
     {
+      print(cnt)
       cnt <- cnt + 1
       #交叉，优秀的个体繁衍的机会越大
       for(i in seq(1, gnum, 2))
@@ -955,7 +959,7 @@ require('parallel')
           m2 <- length(which(b1 & !b2)) #字符对字符，而且一致
           #m3 <- length(which(b1 & b2)) #空格对空格
           m4 <- length(which(!b1 & !b2)) #字符对字符，但不 一致
-          mark <- mark + m1 * -2 + m2 * 1 + m4 * -1
+          mark <- mark + m1 * -5 + m2 * 5 + m4 * -4
         }
         mark <- ifelse(mark==0,1,ifelse(mark<0,-1/mark,mark))
         return(mark)
@@ -1038,7 +1042,7 @@ require('parallel')
         tind <- interfere(oind)
         tmark <- SP(tind)
         deta <- (omark - tmark) / omark
-        if(deta <= 0 || exp(-Tp/deta) > runif(1))
+        if(deta <= 0 || exp(-deta/Tp) > runif(1))
         {
           oind <- tind
           omark <- tmark
@@ -1062,4 +1066,489 @@ require('parallel')
     return(delAlign(best))
   }
 )
+
+'<-'(
+  liang.msaStar,
+  function(seqs)
+  {
+    '<-'(
+      SP,
+      function(tm)
+      {
+        di <- dim(tm)
+        csum <- di[2]
+        mark <- 0
+        for(i in 1:(csum-1))
+        {
+          b1 <- tm[,(i+1):(csum-1)] == tm[,i] #两个位置一致
+          b2 <- tm[,(i+1):(csum-1)] == '-' #被比对位置为空格
+          m1 <- length(which(!b1 & b2)) #空格对字母
+          m2 <- length(which(b1 & !b2)) #字符对字符，而且一致
+          #m3 <- length(which(b1 & b2)) #空格对空格
+          m4 <- length(which(!b1 & !b2)) #字符对字符，但不 一致
+          mark <- mark + m1 * -5 + m2 * 5 + m4 * -4
+        }
+        mark <- ifelse(mark==0,1,ifelse(mark<0,-1/mark,mark))
+        return(mark)
+      }
+    )
+    
+    num <- length(seqs)
+    marks <- matrix(0, num, num, dimnames = list(names(seqs), names(seqs)))
+    seqs <- lapply(seqs, as.matrix)
+    for(i in 1:num){
+      for(k in 1:num){
+        if(i>=k){
+          next
+        }
+        tmp <- liang_NW(seqs[[i]], seqs[[k]], print)
+        marks[i,k] <- SP(tmp) 
+      }
+    }
+    marks <- as.matrix(as.dist(marks))
+    now <- which.max(rowSums(marks))
+    had <- numeric(num)
+    ans <- seqs[[now]]
+    for(i in 1:(num-1)){
+      had[i] <- now
+      nxt <- -Inf
+      odr <- order(marks[now,])
+      for(i in 1:num)
+      {
+        if(i %in% had)
+        {
+          next
+        }
+        nxt <- ifelse(odr[i]>=nxt,i,nxt)
+      }
+      ans <- liang_NW(seqs[[nxt]], ans, print)
+      now <- nxt
+    }
+    #print(had)
+    #print(SP(ans))
+    return(ans)
+  }
+)
+
+'<-'(
+  liang.msaStarClimb,
+  function(seqs, bear=1000, delSpace=TRUE, hb = NULL)
+  {
+    '<-'(
+      SP,
+      function(tm)
+      {
+        di <- dim(tm)
+        csum <- di[2]
+        mark <- 0.1
+        for(i in 1:(csum-1))
+        {
+          b1 <- tm[,(i+1):(csum-1)] == tm[,i] #两个位置一致
+          b2 <- tm[,(i+1):(csum-1)] == '-' #被比对位置为空格
+          m1 <- length(which(!b1 & b2)) #空格对字母
+          m2 <- length(which(b1 & !b2)) #字符对字符，而且一致
+          #m3 <- length(which(b1 & b2)) #空格对空格
+          m4 <- length(which(!b1 & !b2)) #字符对字符，但不 一致
+          mark <- mark + m1 * -5 + m2 * 5 + m4 * -4
+        }
+        mark <- ifelse(mark==0,1,ifelse(mark<0,-1/mark,mark))
+        return(mark)
+      }
+    )
+    '<-'(
+      Interfere,
+      function(tm)
+      {
+        di <- dim(tm)
+        ch <- round(runif(1, 1, di[2]))
+        v <- tm[,ch]
+        iszero <- which(v=='-')
+        if(length(iszero)<=1)
+        {
+          if(length(iszero))
+          {
+            p <- iszero
+          }
+          else
+          {
+            return(tm)
+          }
+        }
+        else
+        {
+          p <- sample(iszero, 1)
+        }
+        if(p==1)
+        {
+          tmp <- v[2:di[1]]
+        }
+        else if(p == di[1])
+        {
+          tmp <- v[1:(di[1]-1)]
+        }
+        else
+        {
+          tmp <- character(di[1]-1)
+          tmp[1:(p-1)] <- v[1:(p-1)]
+          tmp[p:(di[1]-1)] <- v[(p+1):di[1]]
+        }
+        s <- ifelse(p<5,0,p-5)
+        e <- ifelse(p>di[1]-6,di[1]-1,p+5)
+        v <- append(tmp, '-', sample(s:e, 1))
+        tm[,ch] <- v
+        return(tm)
+      }
+    )
+    
+    
+    yuzhi <- bear
+    if(is.null(hb))
+    {
+      ans <- liang.msaStar(seqs) 
+    }
+    else
+    {
+      ans <- hb
+    }
+    mark <- SP(ans)
+    rnum <- dim(ans)[1]
+    
+    #record <- numeric(1000000)
+    #tim <- -1
+    while(yuzhi > 0)
+    {
+      #tim <- tim + 1
+      tans <- Interfere(ans)
+      tmark <- SP(tans)
+      if(mark > tmark)
+      {
+        yuzhi <- yuzhi - 1 
+      }
+      else
+      {
+        yuzhi <- ifelse(tmark>mark, bear, yuzhi)
+        ans <- tans
+        mark <- tmark
+      }
+      #record[tim] <- mark
+    }
+    #print(mark)
+    #plot(1:tim, record[1:tim], 'l',xlab='iter', ylab='mark')
+    if(delSpace)
+    {
+      weishu <- dim(ans)[1]
+      weishu <- which(sapply(1:weishu, function(x){return(all(ans[x,]=='-'))}))
+      if(length(weishu))
+      {
+        ans <- ans[-weishu,]
+      } 
+    }
+    return(ans)
+  }
+)
+
+'<-'(
+  liang.msaStarClimbGA,
+  function(seqs, gnum=100, vp=0.1)
+  {
+    '<-'(
+      SP,
+      function(tm)
+      {
+        di <- dim(tm)
+        csum <- di[2]
+        mark <- 0
+        for(i in 1:(csum-1))
+        {
+          b1 <- tm[,(i+1):(csum-1)] == tm[,i] #两个位置一致
+          b2 <- tm[,(i+1):(csum-1)] == '-' #被比对位置为空格
+          m1 <- length(which(!b1 & b2)) #空格对字母
+          m2 <- length(which(b1 & !b2)) #字符对字符，而且一致
+          #m3 <- length(which(b1 & b2)) #空格对空格
+          m4 <- length(which(!b1 & !b2)) #字符对字符，但不 一致
+          mark <- mark + m1 * -5 + m2 * 5 + m4 * -4
+        }
+        mark <- ifelse(mark==0,1,ifelse(mark<0,-1/mark,mark))
+        return(mark)
+      }
+    )
+    hb <- liang.msaStar(seqs)
+    di <- dim(hb)
+    print('序列初步比对完成')
+    clist <- makeCluster(detectCores(logical = F))
+    sapply(ls(".GlobalEnv"), (function(t){return(clusterExport(clist, t, envir = environment()))}))
+    try(group <- parLapply(clist, 1:gnum, function(x){return(liang.msaStarClimb(seqs, 100, FALSE, hb=hb))}))
+    print('初始种群建立完成')
+    
+    '<-'(
+      getChild,
+      function(ind1, ind2)
+      {
+        s <- round(runif(1, 1, di[2]))
+        e <- round(runif(1, s, di[2]))
+        ind <- NA
+        if(s==1)
+        {
+          if(e==di[[2]])
+          {
+            ind <- ind2
+          }
+          else
+          {
+            ind <- cbind(ind2[,1:e],ind1[,(e+1):di[2]]) 
+          }
+        }
+        else if(e==di[2])
+        {
+          ind <- cbind(ind1[,1:(s-1)],ind2[,s:e])
+        }
+        else
+        {
+          ind <- cbind(ind1[,1:(s-1)],ind2[,s:e],ind1[,(e+1):di[2]])
+        }
+        return(ind)
+      }
+    )
+    
+    '<-'(
+      vary,
+      function(tm)
+      {
+        di <- dim(tm)
+        ch <- round(runif(1, 1, di[2]))
+        v <- tm[,ch]
+        iszero <- which(v=='-')
+        if(length(iszero)<=1)
+        {
+          if(length(iszero))
+          {
+            p <- iszero
+          }
+          else
+          {
+            return(tm)
+          }
+        }
+        else
+        {
+          p <- sample(iszero, 1)
+        }
+        if(p==1)
+        {
+          tmp <- v[2:di[1]]
+        }
+        else if(p == di[1])
+        {
+          tmp <- v[1:(di[1]-1)]
+        }
+        else
+        {
+          tmp <- character(di[1]-1)
+          tmp[1:(p-1)] <- v[1:(p-1)]
+          tmp[p:(di[1]-1)] <- v[(p+1):di[1]]
+        }
+        s <- ifelse(p<5,0,p-5)
+        e <- ifelse(p>di[1]-6,di[1]-1,p+5)
+        v <- append(tmp, '-', sample(s:e, 1))
+        tm[,ch] <- v
+        return(tm)
+      }
+    )
+    
+    yuzhi <- 100
+    mark <- 0
+    best <- NA
+    hsy <- numeric(10000)
+    tim <- -1
+    while(yuzhi > 0)
+    {
+      tim <- tim + 1
+      yuzhi <- yuzhi - 1
+      '<-'(
+        fanyan,
+        function(x)
+        {
+          c <- sample(1:gnum,2)
+          return(getChild(group[[c[1]]], group[[c[2]]]))
+        }
+      )
+      #try(ngroup <- parLapply(clist, 1:gnum, fanyan))
+      ngroup <- lapply(1:gnum, fanyan)
+      group[(gnum+1):(gnum*2)] <- ngroup
+      marks <- sapply(group, SP)
+      keep <- order(marks, decreasing = TRUE)[1:gnum]
+      group <- group[keep]
+      marks <- marks[keep]
+      maxMark <- max(marks)
+      if(maxMark > mark)
+      {
+        yuzhi <- 100
+        best <- group[[which.max(marks)]]
+        mark <- maxMark
+      }
+      hsy[tim] <- maxMark
+      
+      '<-'(
+        eachVary,
+        function(ind)
+        {
+          if(runif(1)>vp)
+          {
+            return(ind)
+          }
+          return(vary(ind))
+        }
+      )
+      for(each in 1:gnum)
+      {
+        group[[each]] <- eachVary(group[[each]])
+      }
+      #try(group <- parLapply(clist, group, eachVary))
+    }
+    stopCluster(clist)
+    plot(1:tim, hsy[1:tim],'l',xlab='iter',ylab='mark',main='msa-StarClimbGA')
+    print(mark)
+    return(best)
+  }
+)
+
+'<-'(
+  liang.msaStarGA,
+  function(seqs, gnum = 100)
+  {
+    start <- liang.msaStar(seqs)
+    di <- dim(start)
+    '<-'(
+      genGen,
+      function(ch, tm)
+      {
+        v <- tm[,ch]
+        iszero <- which(v=='-')
+        lenZero <- length(iszero)
+        if(lenZero)
+        {
+          p <- iszero[round(runif(1,1,lenZero))]
+        }
+        else
+        {
+          return(c(0,0))
+        }
+        s <- ifelse(p<5,0,p-5)
+        e <- ifelse(p>di[1]-6,di[1]-1,p+5)
+        r <- round(runif(1,s,e))
+        return(c(p,r))
+      }
+    )
+    '<-'(
+      genInd,
+      function(id, tm)
+      {
+        return(sapply(1:di[2], genGen, tm))
+      }
+    )
+    '<-'(
+      SP,
+      function(tm)
+      {
+        di <- dim(tm)
+        csum <- di[2]
+        mark <- 0
+        for(i in 1:(csum-1))
+        {
+          b1 <- tm[,(i+1):(csum-1)] == tm[,i] #两个位置一致
+          b2 <- tm[,(i+1):(csum-1)] == '-' #被比对位置为空格
+          m1 <- length(which(!b1 & b2)) #空格对字母
+          m2 <- length(which(b1 & !b2)) #字符对字符，而且一致
+          #m3 <- length(which(b1 & b2)) #空格对空格
+          m4 <- length(which(!b1 & !b2)) #字符对字符，但不 一致
+          mark <- mark + m1 * -5 + m2 * 5 + m4 * -4
+        }
+        mark <- ifelse(mark==0,1,ifelse(mark<0,-1/mark,mark))
+        return(mark)
+      }
+    )
+    '<-'(
+      calMark,
+      function(gen,tm)
+      {
+        tm <- tranGen_c(tm, gen)
+        return(SP(tm))
+      }
+    )
+    '<-'(
+      cross,
+      function(ind1, ind2)
+      {
+        ch <- round(runif(1,1,di[2]-1))
+        ind <- matrix(0,2,di[2])
+        ind[,1:ch] <- ind1[,1:ch]
+        ind[,(ch+1):di[2]] <- ind2[,(ch+1):di[2]]
+        return(ind)
+      }
+    )
+    '<-'(
+      groupEvo,
+      function(group, start)
+      {
+        marks <- matrix(0,gnum,2)
+        marks[,1] <- sapply(group, calMark, start)
+        '<-'(
+          fanyan,
+          function(id)
+          {
+            pch <- sample(1:gnum, 2)
+            return(cross(group[[pch[1]]], group[[pch[2]]]))
+          }
+        )
+        bear <- 100
+        nowMax <- which.max(marks[,1])
+        maxMark <- marks[nowMax,1]
+        best <- group[[nowMax]]
+        while(bear > 0)
+        {
+          ngroup <- lapply(1:gnum,fanyan)
+          marks[,2] <- sapply(ngroup, calMark, start)
+          group[(gnum+1):(gnum*2)] <- ngroup
+          keep <- order(marks, decreasing = TRUE)[1:gnum]
+          group <- group[keep]
+          marks[,1] <- marks[keep]
+          nowMax <- which.max(marks[,1])
+          if(marks[nowMax,1] <= maxMark)
+          {
+            bear <- bear  - 1
+          }
+          else
+          {
+            print(maxMark)
+            maxMark <- marks[nowMax,1]
+            best <- group[[nowMax]]
+            bear <- 100
+          }
+        }
+        return(best)
+      }
+    )
+    
+    last <- 1
+    record <- numeric(1000)
+    record[1] <- SP(start)
+    tim <- 1
+    while(last > 0)
+    {
+      print(record[tim])
+      print(tim)
+      tim <- tim + 1
+      group <- lapply(1:gnum, genInd, start)
+      nxt <- groupEvo(group, start)
+      start <- tranGen_c(start, nxt)
+      record[tim] <- SP(start)
+      last <- last - 1
+    }
+    plot(1:tim, record[1:tim],'l',xlab='iter',ylab='mark')
+    
+    return(start)
+  }
+)
+
+#mt <- sapply(1:10, function(x){return(SP(liang.msaStar(temp)))})
 
