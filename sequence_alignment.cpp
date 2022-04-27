@@ -61,7 +61,7 @@ CharacterMatrix liang_NW(CharacterMatrix s1, CharacterMatrix s2,Function print){
         now_mark += s2(k-1,q)=="-" ? gap : (s1(i-1,0) == s2(k-1,q) ? 5 : -4);
       }
       left = marks(i,k-1) + gap;
-      up = marks(i-1,k) + gap;
+      up = marks(i-1,k) + gap*numc;
       go = marks(i-1,k-1) + now_mark;
       marks(i,k) = (left>up?left:up) > go ? (up>left ? up : left) : go;
       ways(i,k) = (left>up?left:up) > go ? (up>left ? 3 : 1) : 2;
@@ -139,13 +139,15 @@ CharacterMatrix tranGen_c(CharacterMatrix tm, NumericMatrix gen){
   int ch,p,r,nowk,nowj;
   CharacterVector v(nr),tmp(nr);
   for(int i=0;i<nc;i++){
-    ch = i;
     p = gen(0,i) - 1;
     r = gen(1,i);
+    if(p==-1 || p==r){
+      continue; 
+    }
+    ch = i;
     v = tm(_,ch);
     nowk = 0;
     nowj = 0;
-    if(r==p) continue;
     for(int k=0;k<nr;k++)
     {
       if(k==p)

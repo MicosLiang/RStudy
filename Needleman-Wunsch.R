@@ -172,6 +172,14 @@
     temp.ans <- c()
     temp.names <- c()
     '<-'(
+      delSeq,
+      function(s)
+      {
+        ans <- as.character(unlist(strsplit(s,split='')))
+        return(ans)
+      }
+    )
+    '<-'(
       delLine,
       function(w)
       {

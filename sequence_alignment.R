@@ -1072,6 +1072,21 @@ require('parallel')
   function(seqs)
   {
     '<-'(
+      JC,
+      function(ss)
+      {
+        ss <- del_alig(ss,0)
+        tmp <- 1 - length(which(ss[,1] != ss[,2])) / dim(ss)[1]
+        if(tmp > 0){
+          tmp <- -0.75 * log(tmp)
+          tmp <- ifelse(tmp<0,-1/tmp,tmp)
+          return(tmp)
+        }
+        warning('too far')
+        return(Inf)
+      }
+    )
+    '<-'(
       SP,
       function(tm)
       {
@@ -1093,6 +1108,7 @@ require('parallel')
       }
     )
     
+    oname <- names(seqs)
     num <- length(seqs)
     marks <- matrix(0, num, num, dimnames = list(names(seqs), names(seqs)))
     seqs <- lapply(seqs, as.matrix)
@@ -1102,16 +1118,18 @@ require('parallel')
           next
         }
         tmp <- liang_NW(seqs[[i]], seqs[[k]], print)
-        marks[i,k] <- SP(tmp) 
+        #marks[i,k] <- SP(tmp) 
+        marks[i,k] <- JC(tmp)
       }
     }
-    marks <- as.matrix(as.dist(marks))
-    now <- which.max(rowSums(marks))
+    #marks <- as.matrix(as.dist(marks))
+    marks <- marks + t(marks)
+    now <- which.min(rowSums(marks))
     had <- numeric(num)
     ans <- seqs[[now]]
     for(i in 1:(num-1)){
       had[i] <- now
-      nxt <- -Inf
+      nxt <- Inf
       odr <- order(marks[now,])
       for(i in 1:num)
       {
@@ -1119,14 +1137,21 @@ require('parallel')
         {
           next
         }
-        nxt <- ifelse(odr[i]>=nxt,i,nxt)
+        nxt <- ifelse(odr[i]<=nxt,i,nxt)
       }
       ans <- liang_NW(seqs[[nxt]], ans, print)
       now <- nxt
     }
+    had[num] <- now
+    di <- dim(ans)
+    tans <- matrix('-',di[1],di[2],dimnames = list(NULL,oname))
+    for(i in num:1)
+    {
+      tans[,had[num+1-i]] <- ans[,i]
+    }
     #print(had)
     #print(SP(ans))
-    return(ans)
+    return(tans)
   }
 )
 
@@ -1414,7 +1439,7 @@ require('parallel')
 
 '<-'(
   liang.msaStarGA,
-  function(seqs, gnum = 10)
+  function(seqs, gnum = 100)
   {
     start <- liang.msaStar(seqs)
     di <- dim(start)
@@ -1443,7 +1468,11 @@ require('parallel')
       genInd,
       function(id, tm)
       {
-        return(sapply(1:di[2], genGen, tm))
+        ans <- matrix(0, 2, di[2])
+        ch <- round(runif(1,1,di[2]))
+        ans[,ch] <- genGen(ch, tm)
+        #sapply(1:di[2], genGen, tm)
+        return(ans)
       }
     )
     '<-'(
@@ -1490,7 +1519,8 @@ require('parallel')
       groupEvo,
       function(group, start)
       {
-        marks <- sapply(group, calMark, start)
+        marks <- matrix(0,gnum,2)
+        marks[,1] <- sapply(group, calMark, start)
         '<-'(
           fanyan,
           function(id)
@@ -1500,42 +1530,41 @@ require('parallel')
           }
         )
         bear <- 100
-        nowMax <- which.max(marks)
-        maxMark <- marks[nowMax]
+        nowMax <- which.max(marks[,1])
+        maxMark <- marks[nowMax,1]
         best <- group[[nowMax]]
         while(bear > 0)
         {
           ngroup <- lapply(1:gnum,fanyan)
-          marks[(gnum+1):(gnum*2)] <- sapply(ngroup, calMark, start)
-          print(max(marks[(gnum+1):(gnum*2)]))
+          marks[,2] <- sapply(ngroup, calMark, start)
           group[(gnum+1):(gnum*2)] <- ngroup
           keep <- order(marks, decreasing = TRUE)[1:gnum]
           group <- group[keep]
-          marks <- marks[keep]
-          nowMax <- which.max(marks)
-          if(marks[nowMax] <= maxMark)
+          marks[,1] <- marks[keep]
+          nowMax <- which.max(marks[,1])
+          if(marks[nowMax,1] <= maxMark)
           {
             bear <- bear  - 1
           }
           else
           {
-            print('dd')
-            maxMark <- marks[nowMax]
+            print(maxMark)
+            maxMark <- marks[nowMax,1]
             best <- group[[nowMax]]
             bear <- 100
           }
-          print(maxMark)
         }
         return(best)
       }
     )
     
-    last <- 1000
+    last <- 1
     record <- numeric(1000)
     record[1] <- SP(start)
     tim <- 1
     while(last > 0)
     {
+      print(record[tim])
       print(tim)
       tim <- tim + 1
       group <- lapply(1:gnum, genInd, start)

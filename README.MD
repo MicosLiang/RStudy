@@ -61,6 +61,7 @@ I only have poor Chinglish, sorry for this :(
 ###### NJ-buildTree
 
   NJ（邻接法）构建系统进化树。
+  已弃用
 
 
 
@@ -84,3 +85,7 @@ I only have poor Chinglish, sorry for this :(
 ###### sequence_alignment
 
   双序列比对和多序列比对
+  
+###### ML-buildTree
+
+  各种方法构建系统发育树
