@@ -226,7 +226,7 @@ sourceCpp('./RStudy/ML-buildTree.cpp')
     {
       edges$类群 <- real_class
     } else {
-      edges$real_class = '默认类群'
+      edges$类群 = '默认类群'
     }
     lb <- length(bts)
     bts <- as.character(bts)
