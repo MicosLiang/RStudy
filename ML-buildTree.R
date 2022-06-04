@@ -1,5 +1,6 @@
 require(Rcpp)
 sourceCpp('./RStudy/ML-buildTree.cpp')
+source('./RStudy/sequence_alignment.R')
 '<-'(
   MP,
   function(ss)
@@ -230,15 +231,19 @@ sourceCpp('./RStudy/ML-buildTree.cpp')
     }
     lb <- length(bts)
     bts <- as.character(bts)
+    bts[which(bts=='-1')] <- ''
     bts[1:length(nms)] <- nms
     vertices <- data.frame(name =as.character(1:lb),support = bts)
-    ggraph(graph_from_data_frame(edges, vertices = vertices), layout = 'dendrogram', circular = FALSE) + 
+    ggraph(graph_from_data_frame(edges, vertices = vertices), layout = 'dendrogram', circular = T) + 
       #geom_edge_link() +
-      #geom_edge_elbow2() +
-      geom_edge_bend2(aes(colour = 类群)) +
+      #geom_edge_elbow2(aes(colour = 类群)) +
+      geom_edge_elbow(aes(colour = 类群)) +
+      coord_fixed() +
+      #geom_edge_bend2(aes(colour = 类群)) +
+      #geom_edge_diagonal0(aes(colour = 类群)) +
       geom_node_point() +
       geom_node_text(aes(label = support,), repel = TRUE) +
-      ggtitle('最大简约法构建进化树 \n 代码实现：MicosLiang \n 数据来源：童宗中等（2002）') + 
+      #ggtitle('最大简约法构建进化树 \n 代码实现：MicosLiang \n 数据来源：童宗中等（2002）') + 
       theme_void()
   }
 )
@@ -344,7 +349,7 @@ sourceCpp('./RStudy/ML-buildTree.cpp')
 
 '<-'(
   MP_buildTrees,
-  function(ss,num=100,seqs=NULL,use=0,no_space=TRUE,real_class=NULL)
+  function(ss,num=100,seqs=NULL,use=0,no_space=TRUE,real_class=NULL,have_out=F)
   {
     if(!(require(ggraph) && require(igraph)))
     {
@@ -355,15 +360,26 @@ sourceCpp('./RStudy/ML-buildTree.cpp')
     {
       dis <- getDistance(seqs,use=use)
       allDis <- rowSums(dis)
+      new_order <- order(allDis,decreasing = TRUE)
       if(!is.null(real_class))
       {
-        real_class <- real_class[order(allDis,decreasing = TRUE)]
+        real_class <- real_class[new_order]
       }
-      ss <- ss[,order(allDis,decreasing = TRUE)]
+      ss <- ss[,new_order]
     }
     nms <- names(ss[1,])
     tree <- MP2(ss,no_space)
     bts <- bootStrap(ss,tree,num,no_space=no_space)
+    tr_ls <- getLeis2(tree)
+    if(have_out)
+    {
+      for(k in 1:length(tr_ls)){
+        if(any(tr_ls[[k]]==which(new_order==length(seqs))))
+        {
+          bts[[k]] <- -1
+        }
+      } 
+    }
     if(!is.null(real_class))
     {
       real_class <- getEdgeColor(tree,real_class)
@@ -547,7 +563,7 @@ sourceCpp('./RStudy/ML-buildTree.cpp')
 
 '<-'(
   NJ_buildTrees,
-  function(seqs,otu=F,use=0,num=100)
+  function(seqs,otu=F,use=0,num=100,real_class=NULL)
   {
     if(!(require(ggraph) && require(igraph)))
     {
@@ -558,6 +574,20 @@ sourceCpp('./RStudy/ML-buildTree.cpp')
     distance <- getDistance(seqs,alig_list,use,otu)
     tree <- NJ(distance)
     bts <- NJ_bootstrap(tree, alig_list, seqs,num)
-    drawTree(tree, bts, nms)
+    tr_ls <- getLeis2(tree)
+    if(otu)
+    {
+      for(k in 1:length(tr_ls)){
+        if(any(tr_ls[[k]]==length(seqs)))
+        {
+          bts[[k]] <- -1
+        }
+      } 
+    }
+    if(!is.null(real_class))
+    {
+      real_class <- getEdgeColor(tree,real_class)
+    }
+    drawTree(tree, bts, nms, real_class)
   }
 )

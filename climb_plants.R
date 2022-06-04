@@ -66,3 +66,4 @@ plot(1:75,hsy,'l')
 plot(1:75,a1,'l',col=2,xlab='days',ylab='benfit')
 lines(1:75,a2,'l',col=3)
 legend('topleft',inset=.05, title="APT",c('p=0.6','p=0.4'),lty=c(1,1),col=c(2,3))
+
