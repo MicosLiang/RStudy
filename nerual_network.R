@@ -145,6 +145,8 @@
             }
           }
         }
+        attr(network, 'out') <- vna_layer
+        return(network)
         
         hsy <- numeric(iter)
         #fine-tuning
@@ -179,3 +181,9 @@
     return(network)
   }
 )
+
+dat1 <- c(10.9,14.1,12.6,13.2,11.6)
+dat2 <- c(6.1,4.5,5.5,6.0,4.7)
+plot(dat1,rep(0,5),col=2,cex=3,pch=16,xlim = c(0,15),ylim=c(-5,5),xlab='',ylab='length')
+lines(dat2, rep(0,5),col=3,cex=3,pch=16,type='p')
+legend(legend = c('月季','玫瑰'),'topleft',pch=c(16,16),col=c(2,3))
