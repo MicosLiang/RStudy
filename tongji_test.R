@@ -196,10 +196,11 @@
     }
     if(draw)
     {
-      plot(ox,y,col=2,xlab='x',ylab='y',main=paste('lm: dim=',d))
+      plot(ox,y,col=3,xlab='x',ylab='y',main=paste('lm: dim=',d))
       tx <- seq(min(ox)-10,max(ox)*1.2,0.1)
       x <- sapply(0:d,function(v){return(tx^v)})
-      lines(tx, as.vector(x%*%w), col=3, type='l')
+      lines(tx, as.vector(x%*%w), col=2, type='l')
+      legend('topright',legend=c('y=Σki*x^i',w))
     }
     return(w)
   }
