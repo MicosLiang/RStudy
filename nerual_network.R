@@ -27,7 +27,7 @@
   turn_back_loss,
   function(x)
   {
-    return(1)
+    return(rep(1, length(x)))
   }
 )
 
@@ -36,8 +36,8 @@
   function(info, input_num, neuron_num,active_function,loss_function,eta=0.01)
   {
     layer <- info
-    attr(layer, 'connection') <- matrix(rnorm(input_num*neuron_num),input_num,neuron_num)
-    attr(layer, 'threshold') <- rnorm(neuron_num)
+    attr(layer, 'connection') <- matrix(runif(input_num*neuron_num),input_num,neuron_num)
+    attr(layer, 'threshold') <- runif(neuron_num)
     attr(layer, 'active') <- active_function
     attr(layer, 'loss') <- loss_function
     attr(layer, 'eta') <- eta
@@ -52,9 +52,9 @@
       attr(layer, 'fix'),
       function(layer, input, output, error)
       {
-        dt <- attr(layer, 'eta')*attr(layer, 'loss')(output)*error
-        attr(layer, 'threshold') <- attr(layer, 'threshold') + dt
-        dw <- input %*% t(dt)
+        dt <- attr(layer, 'eta')*error*attr(layer, 'loss')(output)
+        attr(layer, 'threshold') <- attr(layer, 'threshold') + dt * -1
+        dw <- t(input) %*% dt
         attr(layer, 'connection') <- attr(layer, 'connection') + dw
         return(layer)
       }
@@ -65,7 +65,7 @@
 
 '<-'(
   new.network,
-  function(info, input_dim, output_dim, layers_dim, is_div = T)
+  function(info, input_dim, output_dim, layers_dim, is_div = T, hide_func=sigmoid, hide_loss=sigmoid_loss)
   {
     network <- info
     attr(network, 'deep') <- length(layers_dim)
@@ -75,7 +75,7 @@
     cnt <- 1
     for(i in layers_dim)
     {
-      attr(network, as.character(cnt)) <- new.layer(cnt, in_num, i, sigmoid, sigmoid_loss, 0.01)
+      attr(network, as.character(cnt)) <- new.layer(cnt, in_num, i, hide_func, hide_loss, 0.01)
       #attr(attr(network, 'errors'), as.character(cnt)) <- rep(0, i)
       cnt <- cnt + 1
       in_num <- i
